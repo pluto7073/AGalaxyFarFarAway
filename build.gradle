@@ -22,6 +22,7 @@ repositories {
 	maven { url = "https://maven.bai.lol" }
 	maven { url = "https://maven.terraformersmc.com/releases/" }
 	maven { url = "https://maven.shedaniel.me/" }
+	maven { url "https://maven.teamresourceful.com/repository/maven-public/" }
 }
 
 dependencies {
@@ -35,12 +36,13 @@ dependencies {
 		it.officialMojangMappings { nameSyntheticMembers = false }
 	})
 	modImplementation("net.fabricmc:fabric-loader:$loader_version")
+	modImplementation "earth.terrarium.adastra:ad_astra-fabric-$minecraft_version:$ad_astra_version"
 
 	// dev env
-//	modLocalRuntime("maven.modrinth:suggestion-tweaker:$suggestion_tweaker_version")
-//	modLocalRuntime("maven.modrinth:cloth-config:$cloth_config_version") { exclude(group: "net.fabricmc.fabric-api") }
-//	modLocalRuntime("maven.modrinth:jade:$jade_version")
-//	modLocalRuntime("com.terraformersmc:modmenu:$modmenu_version") { exclude(group: "net.fabricmc"); exclude(group: "net.fabricmc.fabric-api") }
+	modLocalRuntime("maven.modrinth:suggestion-tweaker:$suggestion_tweaker_version")
+	modLocalRuntime("maven.modrinth:cloth-config:$cloth_config_version") { exclude(group: "net.fabricmc.fabric-api") }
+	modLocalRuntime("maven.modrinth:jade:$jade_version")
+	modLocalRuntime("com.terraformersmc:modmenu:$modmenu_version") { exclude(group: "net.fabricmc"); exclude(group: "net.fabricmc.fabric-api") }
 
 	// dependencies
 	modImplementation("net.fabricmc.fabric-api:fabric-api:$fabric_version")
@@ -64,6 +66,7 @@ processResources {
 	properties.put("loader_version", loader_version)
 	properties.put("fabric_version", fabric_version)
 	properties.put("minecraft_dependency", minecraft_dependency)
+	properties.put("ad_astra", ad_astra_version)
 
 	properties.forEach((k, v) -> inputs.property(k, v))
 
@@ -83,21 +86,29 @@ sourceSets {
 
 loom {
 	runs {
-		testmodClient {
+		configureEach {
+			vmArg "-XX:+AllowEnhancedClassRedefinition"
+			vmArg "-XX:+IgnoreUnrecognizedVMOptions"
+		}
+
+		datagen {
 			client()
-			name "Testmod Client"
-			source sourceSets.testmod
-			runDir "run/test"
+
+			name "Minecraft Datagen"
+
+			vmArg "-Dfabric-api.datagen"
+			vmArg "-Dfabric-api.datagen.output-dir=${file("src/generated/resources")}"
+			vmArg "-Dfabric-api.datagen.modid=galaxy_far_away"
+			vmArg "-Dporting_lib.datagen.existing_resources=${file("src/main/resources")}"
 		}
-		testmodServer {
-			server()
-			name "Testmod Server"
-			source sourceSets.testmod
-			runDir "run/test_server"
+
+		server {
+			runDir "run/server"
 		}
+		
 		gametest {
 			server()
-			name "Test"
+			name "Minecraft GameTest"
 			source sourceSets.testmod
 			vmArg "-Dfabric-api.gametest"
 			vmArg "-Dfabric-api.gametest.report-file=${project.buildDir}/junit.xml"
